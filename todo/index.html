@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        #tasks { list-style: none; padding: 0; }
+        .task { display: flex; justify-content: space-between; padding: 10px; border: 1px solid #ccc; margin: 5px; }
+        .task.completed { text-decoration: line-through; color: gray; }
+        button { margin-left: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Lista de Tarefas</h1>
+    <input type="text" id="taskInput" placeholder="Nova tarefa">
+    <button onclick="addTask()">Adicionar</button>
+    <ul id="tasks"></ul>
+
+    <script>
+        async function fetchTasks() {
+            const response = await fetch('http://localhost:3000/tasks');
+            const tasks = await response.json();
+            const taskList = document.getElementById('tasks');
+            taskList.innerHTML = '';
+            tasks.forEach(task => {
+                const li = document.createElement('li');
+                li.className = 'task' + (task.completed ? ' completed' : '');
+                li.innerHTML = `
+                    ${task.title}
+                    <button onclick="toggleTask(${task.id}, ${task.completed})">
+                        ${task.completed ? 'Desfazer' : 'Concluir'}
+                    </button>
+                    <button onclick="deleteTask(${task.id})">Excluir</button>
+                `;
+                taskList.appendChild(li);
+            });
+        }
+
+        async function addTask() {
+            const taskInput = document.getElementById('taskInput');
+            if (!taskInput.value.trim()) return;
+            await fetch('http://localhost:3000/tasks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: taskInput.value })
+            });
+            taskInput.value = '';
+            fetchTasks();
+        }
+
+        async function toggleTask(id, completed) {
+            await fetch(`http://localhost:3000/tasks/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ completed: !completed })
+            });
+            fetchTasks();
+        }
+
+        async function deleteTask(id) {
+            await fetch(`http://localhost:3000/tasks/${id}`, { method: 'DELETE' });
+            fetchTasks();
+        }
+
+        fetchTasks();
+    </script>
+</body>
+</html>
